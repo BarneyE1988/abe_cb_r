@@ -11,8 +11,8 @@ lag2 = inflation[1:(t-2),]
 x_0 = rep(1, length(lag0))
 colnames(lag1)[2] = "lag1"
 colnames(lag2)[2] = "lag2"
-
-x = as.matrix(cbind(lag0[,2],x_0, lag1[,2],lag2[,2]))
+y= as.matrix(lag0[,2])
+x = as.matrix(cbind(x_0, lag1[,2],lag2[,2]))
 t = nrow(x)
 
 #Set priors and starting values ####
@@ -37,11 +37,10 @@ out1 = matrix(0,reps,3)
 out2 = c()
 
 # Loop ####
-
 for(i in 1:reps){
   
-  M = solve( solve(sigma0) + drop((1 / sigma2)) * (t(x[,2:4]) %*% x[,2:4])) %*% ( solve(sigma0) %*% B0 + drop((1 / sigma2)) *( t(x[,2:4]) %*% x[,1]) )
-  V = solve(solve(sigma0) + drop((1 / sigma2))*(t(x[,2:4]) %*% x[,2:4]))
+  M = solve( solve(sigma0) + drop((1 / sigma2)) * (t(x) %*% x)) %*% ( solve(sigma0) %*% B0 + drop((1 / sigma2)) *( t(x) %*% y) )
+  V = solve(solve(sigma0) + drop((1 / sigma2))*(t(x) %*% x))
   chck= -1
   
   B = M + t((rnorm(3)) %*% chol(V))
@@ -50,7 +49,7 @@ for(i in 1:reps){
   
   ee = max(abs(eigen(b)$values))
   
-  resid = x[,1] - x[,2:4] %*% B
+  resid = y - x %*% B
   
   T1 = t + T0
   D1 = D0 + t(resid)%*% resid
@@ -63,4 +62,6 @@ for(i in 1:reps){
   sigma2 = D1 /z0_z0
   out1[i,]=t(B)
   out2[i]=sigma2
-}
+  
+  
+} 
