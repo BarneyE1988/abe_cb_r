@@ -77,7 +77,8 @@ betaols= as.matrix(c( solve(t(x) %*% x) %*%(t(x) %*%y)), nrow =6, ncol =1 )
 
 Reps = 10000
 burn = 5000
-
+#preallocate 
+beta=matrix(0,10, Reps)
 out1=matrix(0,Reps,nrow(y)+12)
 out2=matrix(0,Reps,nrow(y)+12)
 i =1
@@ -85,8 +86,8 @@ for(j in 1:Reps){
   
   M = solve( solve(H) + kronecker(solve(Sigma),t(x)%*%x)  ) %*% (solve(H) %*% B0 + kronecker( solve(Sigma), t(x) %*%x) %*%betaols)
   V = solve(solve(H) + kronecker(solve(Sigma),t(x)%*%x) )
-  beta = M + t(rnorm(N * (N * L +1)) %*% chol(V))
-  e = y - x %*% matrix(beta, nrow= N*L +1, ncol= N)
+  beta[,j] = M + t(rnorm(N * (N * L +1)) %*% chol(V))
+  e = y - x %*% matrix( beta[,j], nrow= N*L +1, ncol= N)
   scale = t(e) %*% e + s
   k_s = nrow(solve(scale))
   z_s = matrix(0, t +alpha, k_s)
@@ -100,7 +101,7 @@ for(j in 1:Reps){
     yhat = matrix(0,14,2)
     yhat[1:2,] = y[(nrow(y)-1):nrow(y),]
     for( i in 3:14){
-      yhat[i,] = as.matrix(cbind(1, t(yhat[i-1,]), t(yhat[i-2,]))) %*% matrix(beta, N*L+1,N) + t(rnorm(N)) %*% chol(Sigma)
+      yhat[i,] = as.matrix(cbind(1, t(yhat[i-1,]), t(yhat[i-2,]))) %*% matrix( beta[,j], N*L+1,N) + t(rnorm(N)) %*% chol(Sigma)
     }
     out1[j,] = (c(y[,1],yhat[3:nrow(yhat),1]))
     out2[j,] = (c(y[,2],yhat[3:nrow(yhat),2]))   
@@ -112,4 +113,9 @@ quants <- c(0,0.05,0.25,0.50,0.75,0.90,0.95,0.99,1)
 result <- t(apply( out1 , 2 , quantile , probs = quants , na.rm = TRUE ))
 period <- as.yearqtr(1948 + seq(3, 4*(2014-1948))/4)
 result <- cbind(period, result)
-plot(result[,1], result[,9])
+plot(result[,1], result[,9], type="l")
+
+#check the convergence of beta
+for(i in 1:10){
+plot(cumsum(beta[i,])/1:Reps,type="l")
+}
